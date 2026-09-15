@@ -1,0 +1,43 @@
+simulation:
+  scene: assets/terrains/go2_recoveryrl_flat.xml
+  control_dt: 0.02
+  physics_dt: 0.002
+  target_velocity: 0.6
+  episode_steps: 500
+  fall_angle_threshold: 0.8
+  fall_min_base_height: 0.18
+  fall_consecutive_physics_frames: 5
+  joint_constraint_profile: fr_recovery
+  policy_kp: 25.0
+  policy_kd: 0.5
+  effort_limit: 23.5
+  max_target_rate: 12.0
+  default_joint_position: [0.0, 0.9, -1.8, 0.0, 0.9, -1.8, 0.0, 0.9, -1.8, 0.0, 0.9, -1.8]
+  action_scale: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
+
+adaptation:
+  seed: 3701
+  device: cpu
+  replay_capacity: 400000
+  batch_size: 256
+  warmup_collection_interactions: 10000
+  reward_critic_warmup_updates: 1000
+  adaptation_interactions: 200000
+  risk_threshold: 0.2
+  checkpoint_interval: 50000
+  state_interval: 500
+
+checkpoint_contract:
+  source_task: safe
+  policy_view: yaw_invariant_46d
+  policy_observation_size: 46
+
+provenance:
+  source_repository: /home/xyz/code/works/recovery-rl
+  source_commit: faf65cd73dd10bbfefb3b8cbfce98b73c6851906
+  source_worktree: dirty
+  inspected_files:
+    go2_recovery/core.py: e1d295b5e1a7447fb3d5aca11347a65b6a82a8bc8494b645609b26f8551881ce
+    go2_recovery/native_mujoco.py: f73854b1f1b0e972967f5177ecd27c9b6d90654287b8977110424fd171d756f5
+    go2_recovery/mf_finetune_long.py: 0483d8970bab8221e3f286a3557496575111afa7d983d12fe86abc37b8339f10
+    go2_recovery/task_observation.py: 35c1111eabac2a5ac6f18e8058e6b51d884d9e83995cbe01055bdb375348bb67
