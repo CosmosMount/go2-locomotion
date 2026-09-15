@@ -1,0 +1,174 @@
+seed: 55
+device: cuda:0
+headless: true
+output_dir: outputs/pretrain/recovery
+checkpoint: null
+
+environment:
+  num_envs: 4096
+  actor_observation_dim: 45
+  critic_observation_dim: 260
+  action_dim: 12
+  episode_length_s: 24.0
+  physics_dt: 0.005
+  control_decimation: 4
+  clip_observations: 100.0
+  clip_actions: 10.0
+
+robot:
+  initial_height: 0.6
+  default_joint_position:
+    - 0.0
+    - 1.5
+    - -2.4
+    - 0.0
+    - 1.5
+    - -2.4
+    - 0.0
+    - 1.5
+    - -2.4
+    - 0.0
+    - 1.5
+    - -2.4
+  action_scale:
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+    - 0.25
+  stiffness: 30.0
+  damping: 0.8
+  effort_limit: 23.5
+  velocity_limit: 30.0
+
+observation:
+  raw_abi: go2_raw_46d
+  policy_view: go2_ppo_45d
+  angular_velocity_scale: 0.25
+  joint_velocity_scale: 0.05
+  command_scale: [1.0, 1.0, 0.25]
+  height_scale: 5.0
+  noise:
+    enabled: true
+    level: 1.0
+    angular_velocity: 0.05
+    projected_gravity: 0.05
+    joint_position: 0.01
+    joint_velocity: 0.075
+
+commands:
+  resampling_time_s: 8.0
+  linear_x: [-1.0, 1.0]
+  linear_y: [-1.0, 1.0]
+  angular_z: [-1.0, 1.0]
+
+terrain:
+  curriculum: true
+  rows: 10
+  columns: 10
+  max_initial_level: 5
+  patch_size: [8.0, 8.0]
+  border_width: 5.0
+  horizontal_scale: 0.1
+  vertical_scale: 0.005
+  slope_threshold: 0.75
+  slope_range: [0.0, 0.4]
+  roughness_range: [-0.05, 0.05]
+  stair_height_range: [0.05, 0.35]
+  stair_width: 0.31
+  gap_width_range: [0.0, 1.0]
+  platform_width: 2.0
+  mix:
+    slope: 0.2
+    rough_slope: 0.2
+    stairs_down: 0.2
+    stairs_up: 0.2
+    gap: 0.2
+  height_scanner:
+    size: [1.6, 1.0]
+    resolution: 0.1
+
+domain_randomization:
+  friction_range: [0.5, 1.25]
+  added_base_mass_range: [-3.0, 3.0]
+  limb_mass_scale_range: [0.5, 2.0]
+  base_com_range: [-0.05, 0.05]
+  stiffness_scale_range: [0.8, 1.2]
+  damping_scale_range: [0.8, 1.2]
+  perturbation:
+    interval_s: 15.0
+    duration_s: 0.2
+    force_xy_range: [-30.0, 30.0]
+    torque_xyz_range: [-5.0, 5.0]
+
+termination:
+  rotated_projected_gravity_z: -0.8
+  rotated_sustain_steps: 400
+
+rewards:
+  only_positive: true
+  base_height_target: 0.45
+  foot_height_target: 0.09
+  max_contact_force: 500.0
+  soft_joint_position_limit: 0.9
+  stand_target_curriculum_iterations: 1500
+  scales:
+    orientation: -0.5
+    orientation_pos_gaussian: 6.0
+    base_height_pos: 1.0
+    foot_contact_pos: 0.1
+    step2_target_pos: 6.0
+    angular_velocity_xyz: -0.05
+    torques: -0.0002
+    joint_acceleration: -0.000001
+    joint_velocity: -0.002
+    joint_position_limits: -10.0
+    collision: -0.2
+    action: -0.01
+    action_rate: -0.02
+    action_smoothness_2: -0.05
+    max_velocity: -0.1
+    feet_stumble: -1.0
+
+ppo:
+  max_iterations: 4000
+  steps_per_env: 24
+  actor_hidden_dims: [512, 256, 128]
+  critic_hidden_dims: [512, 256, 128]
+  activation: elu
+  initial_std: 1.0
+  min_std: 0.05
+  max_std: 2.0
+  learning_rate: 0.001
+  min_learning_rate: 0.00001
+  max_learning_rate: 0.01
+  adaptive_learning_rate: true
+  target_kl: 0.01
+  kl_stop_multiplier: 10.0
+  update_epochs: 5
+  num_minibatches: 4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_ratio: 0.2
+  value_clip: 0.2
+  value_loss_coefficient: 1.0
+  entropy_coefficient: 0.01
+  max_grad_norm: 1.0
+  save_interval: 100
+
+provenance:
+  source_repository: /home/xyz/code/works/FR-Net
+  source_commit: 85c872d9bef0a74716d8d3fb1e89606c8a42101e
+  source_worktree: dirty
+  inspected_files:
+    legged_gym/envs/go2/go2_recovery/go2_recovery_config.py: ce4bb512b6c33af9ace1de092a6bcb78c9447d2f602854e40a0c691ed95e6d62
+    legged_gym/envs/go2/go2_recovery/go2_recovery_env.py: b2e06bd5daf712e55a9cfa649517d1bbaf2874d304bcd260a9523cfb44cbb69d
+    legged_gym/envs/go2/go2.py: 0aa90a30d7d987242263629ba8420e328fed6798a08b94281d8db71d2409402a
+    legged_gym/utils/terrain.py: 35711ea71b3f4654186ef56600da07c7ce3c14cf83e0aae4511d64b5fd117bb7
