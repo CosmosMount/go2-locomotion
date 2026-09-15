@@ -4,6 +4,7 @@ __pycache__/
 .coverage
 .mypy_cache/
 .ruff_cache/
+.codex-wake-run/
 
 # All experiment artefacts stay outside version control.
 outputs/
