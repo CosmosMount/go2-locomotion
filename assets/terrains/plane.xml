@@ -1,0 +1,6 @@
+<mujoco model="shared_plane">
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <worldbody>
+    <geom name="ground" type="plane" size="20 20 0.1" friction="1 0.005 0.0001" rgba="0.25 0.3 0.35 1"/>
+  </worldbody>
+</mujoco>
