@@ -1,0 +1,56 @@
+# Fixed source-domain protocol. Runtime overrides are limited to the CLI flags
+# exposed by ``python -m pretrain.recoveryrl``. Task SAC and Safety-Q update
+# from the same source replay; MF recovery starts only after both are frozen.
+seed: 1701
+transitions: 200000
+num_envs: 16
+batch_size: 256
+replay_capacity: 400000
+learning_starts: 2500
+updates_per_transition: 1
+recovery_updates: 10000
+
+obs_dim: 46
+action_dim: 12
+hidden_dim: 256
+learning_rate: 0.0003
+gamma: 0.99
+gamma_safe: 0.9607894391523232
+tau: 0.005
+tau_safe: 0.0002
+safety_positive_fraction: 0.25
+risk_threshold_epsilon: 0.1
+alpha_init: 1.0
+automatic_entropy_tuning: true
+target_entropy: -12.0
+safety_continuation: task
+task_observation_view: yaw_invariant
+safety_observation_view: raw
+
+environment:
+  backend: isaac_lab
+  device: cuda:0
+  headless: true
+  target_velocity: 0.5
+  physics_dt: 0.002
+  control_dt: 0.02
+  episode_steps: 500
+  default_joint_position: [0.0, 0.9, -1.8, 0.0, 0.9, -1.8, 0.0, 0.9, -1.8, 0.0, 0.9, -1.8]
+  action_scale: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
+  max_target_rate: 12.0
+  failure_angle: 0.8
+  failure_min_base_height: 0.18
+  failure_consecutive_frames: 5
+  domain_randomization: true
+  push_interval_s: [3.0, 6.0]
+  push_velocity_xy: [-0.5, 0.5]
+
+provenance:
+  source_repository: /home/xyz/code/works/recovery-rl
+  source_commit: faf65cd73dd10bbfefb3b8cbfce98b73c6851906
+  source_worktree_dirty: true
+  source_files_sha256:
+    core.py: e1d295b5e1a7447fb3d5aca11347a65b6a82a8bc8494b645609b26f8551881ce
+    train.py: 3afdb00a686539076bce6f3d2a12070f5ffd9cb8fd2cd4a0ad95e87c93fe236c
+    task_observation.py: 35c1111eabac2a5ac6f18e8058e6b51d884d9e83995cbe01055bdb375348bb67
+    protocol.json: b2cfd98974305af90ac4f688d77c94aa619222d88be166abec84f32d20f937d6
