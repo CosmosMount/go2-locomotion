@@ -1,0 +1,151 @@
+task:
+  name: pretrain-locomotion
+  seed: 42
+
+provenance:
+  source_repository: /home/xyz/code/works/go2-rl
+  source_commit: 24591e29b9b9f3ba02ff615ea12653b57c37ac93
+  source_dirty: true
+  source_files:
+    - pretrain/config.py
+    - pretrain/environment.py
+    - pretrain/observation.py
+    - pretrain/reward.py
+    - pretrain/train.py
+  rl_commit: 9a85f348dcf31aca487bb844c319a012790edf20
+
+robot:
+  usd_path: assets/robots/go2/usd/go2.usd
+  joint_names:
+    - FL_hip_joint
+    - FL_thigh_joint
+    - FL_calf_joint
+    - FR_hip_joint
+    - FR_thigh_joint
+    - FR_calf_joint
+    - RL_hip_joint
+    - RL_thigh_joint
+    - RL_calf_joint
+    - RR_hip_joint
+    - RR_thigh_joint
+    - RR_calf_joint
+  default_joint_position:
+    - 0.1
+    - 0.8
+    - -1.5
+    - -0.1
+    - 0.8
+    - -1.5
+    - 0.1
+    - 1.0
+    - -1.5
+    - -0.1
+    - 1.0
+    - -1.5
+  initial_base_position: [0.0, 0.0, 0.4]
+  action_scale: 0.25
+  stiffness: 25.0
+  damping: 0.5
+  effort_limit: 23.5
+  velocity_limit: 1000.0
+  soft_joint_position_limit_factor: 0.9
+
+observation:
+  raw_abi: go2_raw_46d
+  raw_size: 46
+  policy_view: go2_ppo_45d
+  actor_size: 45
+  critic_view: ppo_go2_privileged_60d
+  critic_size: 60
+  quaternion_order: WXYZ
+  estimated_velocity_frame: body
+  angular_velocity_frame: body
+  angular_velocity_scale: 0.2
+  command_scale: [1.0, 1.0, 1.0]
+  joint_velocity_scale: 0.05
+  torque_scale: 0.01
+  noise: true
+  clip: 100.0
+
+simulation:
+  device: cuda:0
+  num_envs: 4096
+  env_spacing: 2.5
+  physics_dt: 0.005
+  decimation: 4
+  episode_length_s: 20.0
+  terrain: flat
+  friction: 1.0
+  restitution: 0.0
+  contact_history_length: 3
+
+commands:
+  linear_x: [-1.0, 1.0]
+  linear_y: [-0.4, 0.4]
+  yaw: [-1.0, 1.0]
+  standing_fraction: 0.1
+  resampling_s: 10.0
+  curriculum: true
+
+randomization:
+  enabled: true
+  pushes: true
+  push_interval_s: [5.0, 10.0]
+  push_velocity_xy: [-0.5, 0.5]
+  reset_joint_velocity: [-1.0, 1.0]
+  initial_xy: [-0.5, 0.5]
+  initial_yaw: [-3.141592653589793, 3.141592653589793]
+
+termination:
+  bad_orientation_angle: 0.8
+  contact_force_threshold: 1.0
+
+reward:
+  linear_tracking_std: 0.5
+  yaw_tracking_std: 0.5
+  feet_air_time_target: 0.5
+  moving_command_threshold: 0.1
+  weights:
+    track_linear_velocity: 1.5
+    track_yaw_velocity: 0.75
+    vertical_velocity: -2.0
+    roll_pitch_velocity: -0.05
+    flat_orientation: -2.5
+    joint_torque: -0.0002
+    joint_acceleration: -0.00000025
+    action_rate: -0.1
+    feet_air_time: 0.1
+    undesired_contacts: -1.0
+    joint_velocity: -0.001
+    joint_position: -0.7
+    joint_limits: -10.0
+    energy: -0.00002
+    air_time_variance: -1.0
+    feet_slide: -0.1
+
+ppo:
+  max_iterations: 5000
+  horizon: 24
+  gamma: 0.99
+  gae_lambda: 0.95
+  learning_rate: 0.001
+  min_learning_rate: 0.00001
+  max_learning_rate: 0.001
+  adaptive_learning_rate: true
+  update_epochs: 5
+  num_minibatches: 4
+  clip_ratio: 0.2
+  value_clip: 0.2
+  value_loss_coefficient: 1.0
+  entropy_coefficient: 0.0
+  max_grad_norm: 1.0
+  std_dev: 1.0
+  min_std_dev: 0.05
+  max_std_dev: 1.0
+  target_kl: 0.01
+  kl_stop_multiplier: 4.0
+  action_clipping_and_rescaling: true
+  hidden_dims: [512, 256, 128]
+  activation: elu
+  checkpoint_interval: 50
+  output_dir: outputs/pretrain/locomotion
