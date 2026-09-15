@@ -2,7 +2,10 @@ simulation:
   scene: assets/terrains/go2_recoveryrl_flat.xml
   control_dt: 0.02
   physics_dt: 0.002
-  target_velocity: 0.6
+  # The transferred actor runs at about 1.0 m/s in this MuJoCo model. Keep the
+  # adaptation objective above that baseline so this is an acceleration task.
+  source_velocity_reference: 1.0
+  target_velocity: 1.2
   episode_steps: 500
   fall_angle_threshold: 0.8
   fall_min_base_height: 0.18

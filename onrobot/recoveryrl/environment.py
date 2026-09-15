@@ -142,6 +142,7 @@ class MujocoRecoveryEnv:
         applied_action, target = self.mapper.apply(action)
         self.builder.set_previous_joint_target(target)
         failure = False
+        forward_velocities = []
         for _ in range(self.physics_steps_per_action):
             torque = self.kp * (target - self.data.qpos[self.qpos_addresses]) \
                      - self.kd * self.data.qvel[self.qvel_addresses]
@@ -152,6 +153,9 @@ class MujocoRecoveryEnv:
             self.mujoco.mj_forward(self.model, self.data)
             self.total_physics_steps += 1
             _, _, _, quaternion, _ = self._sensors()
+            forward_velocities.append(float(
+                (quaternion_rotation_matrix_wxyz(quaternion).T @ self.data.qvel[:3])[0]
+            ))
             roll, pitch = _quaternion_to_roll_pitch(quaternion)
             tilted = abs(roll) > self.fall_angle or abs(pitch) > self.fall_angle
             low = float(self.data.xpos[self.base_body_id, 2]) < self.fall_height
@@ -179,6 +183,7 @@ class MujocoRecoveryEnv:
             "forward_velocity": float(
                 (quaternion_rotation_matrix_wxyz(quaternion).T @ self.data.qvel[:3])[0]
             ),
+            "mean_forward_velocity": float(np.mean(forward_velocities)),
             "applied_action": applied_action.copy(),
             "joint_target": target.copy(),
             "reward_terms": reward_terms,

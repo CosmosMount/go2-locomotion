@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import random
 import traceback
@@ -52,6 +53,19 @@ def _configuration() -> dict:
         raise ValueError("the approved adaptation budget is exactly 200000 interactions")
     if config["checkpoint_contract"]["policy_view"] != POLICY_VIEW:
         raise ValueError("recoveryrl requires the common yaw-invariant task view")
+    simulation = config["simulation"]
+    source_velocity = float(simulation["source_velocity_reference"])
+    target_velocity = float(simulation["target_velocity"])
+    if (
+        not math.isfinite(source_velocity)
+        or not math.isfinite(target_velocity)
+        or source_velocity <= 0
+        or target_velocity <= source_velocity
+    ):
+        raise ValueError(
+            "adaptation target_velocity must exceed the positive "
+            "source_velocity_reference"
+        )
     return config
 
 
@@ -90,6 +104,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", help="Torch device; defaults to config.yaml")
     parser.add_argument("--seed", type=int, help="override the default seed 3701")
     parser.add_argument(
+        "--target-velocity", type=float,
+        help="adaptation reward target in m/s; defaults to config.yaml (1.2)",
+    )
+    parser.add_argument(
         "--headless", action=argparse.BooleanOptionalAction, default=True,
         help="accepted for root-runner consistency; this MuJoCo task has no viewer",
     )
@@ -101,6 +119,16 @@ def main(argv: list[str] | None = None) -> int:
     checkpoint_contract = config["checkpoint_contract"]
     seed = adaptation["seed"] if args.seed is None else args.seed
     adaptation["seed"] = seed
+    if args.target_velocity is not None:
+        if (
+            not math.isfinite(args.target_velocity)
+            or args.target_velocity
+            <= float(simulation["source_velocity_reference"])
+        ):
+            parser.error(
+                "--target-velocity must exceed simulation.source_velocity_reference"
+            )
+        simulation["target_velocity"] = float(args.target_velocity)
     checkpoint = args.checkpoint.resolve()
     if not checkpoint.is_file():
         parser.error(f"source-safe checkpoint does not exist: {checkpoint}")
@@ -125,6 +153,8 @@ def main(argv: list[str] | None = None) -> int:
         "recovery_interventions": 0,
         "task_failures": 0,
         "replay_failure_transitions": 0,
+        "warmup_mean_forward_velocity": None,
+        "adaptation_mean_forward_velocity": None,
         "source_checkpoint": str(checkpoint),
         "source_sha256": source_sha256,
     }
@@ -165,12 +195,25 @@ def main(argv: list[str] | None = None) -> int:
             "safety_view": "canonical raw46",
             "intervention_replay": "excluded",
             "task_failure_transition": "retained_terminal",
+            "velocity_adaptation": {
+                "source_policy_reference_mps": simulation["source_velocity_reference"],
+                "reward_target_mps": simulation["target_velocity"],
+                "target_delta_mps": (
+                    simulation["target_velocity"]
+                    - simulation["source_velocity_reference"]
+                ),
+                "conditioning": (
+                    "reward_only; target velocity is not in the 46D policy observation"
+                ),
+            },
         }
         _write_json(output / "protocol.json", protocol)
         env = MujocoRecoveryEnv(simulation, seed=seed)
         observation = env.reset(seed=seed)
 
         state.update(status="running", phase="warmup_collection")
+        warmup_velocity_sum = 0.0
+        adaptation_velocity_sum = 0.0
         with (output / "training.jsonl").open("w", buffering=1) as trace:
             for interaction in range(1, adaptation["warmup_collection_interactions"] + 1):
                 action = agent.act(observation, use_recovery=False)
@@ -186,6 +229,11 @@ def main(argv: list[str] | None = None) -> int:
                 state["task_replay_size"] = len(replay)
                 state["task_failures"] += int(terminated)
                 state["replay_failure_transitions"] += int(terminated)
+                forward_velocity = float(info["mean_forward_velocity"])
+                warmup_velocity_sum += forward_velocity
+                state["warmup_mean_forward_velocity"] = (
+                    warmup_velocity_sum / interaction
+                )
                 trace.write(json.dumps({
                     "phase": "warmup_collection",
                     "interaction": interaction,
@@ -194,6 +242,8 @@ def main(argv: list[str] | None = None) -> int:
                     "truncated": truncated,
                     "risk": action["risk"],
                     "recovery": False,
+                    "forward_velocity": forward_velocity,
+                    "target_velocity": simulation["target_velocity"],
                     "replay_size": len(replay),
                 }, allow_nan=False) + "\n")
                 if interaction % adaptation["state_interval"] == 0:
@@ -240,7 +290,12 @@ def main(argv: list[str] | None = None) -> int:
                     if not terminated and len(replay) >= adaptation["batch_size"]:
                         metrics = agent.update_task(replay)
                 observation = next_observation
+                forward_velocity = float(info["mean_forward_velocity"])
+                adaptation_velocity_sum += forward_velocity
                 state["adaptation_interactions"] = interaction
+                state["adaptation_mean_forward_velocity"] = (
+                    adaptation_velocity_sum / interaction
+                )
                 state["task_updates"] = agent.steps
                 state["task_replay_size"] = len(replay)
                 trace.write(json.dumps({
@@ -251,6 +306,8 @@ def main(argv: list[str] | None = None) -> int:
                     "truncated": truncated,
                     "risk": action["risk"],
                     "recovery": action["recovered"],
+                    "forward_velocity": forward_velocity,
+                    "target_velocity": simulation["target_velocity"],
                     "replay_size": len(replay),
                     "task_updates": agent.steps,
                 }, allow_nan=False) + "\n")
