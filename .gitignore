@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# All experiment artefacts stay outside version control.
+outputs/
+logs/
+runs/
+checkpoints/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.npy
+*.npz
+*.mp4
+
+# Tests for this integration are ephemeral and run from /tmp.
+tests/
+test_*.py
