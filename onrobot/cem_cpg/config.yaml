@@ -1,0 +1,53 @@
+source:
+  repository: /home/xyz/code/works/go2-rl-proprio-stair-feasibility
+  commit: 24591e29b9b9f3ba02ff615ea12653b57c37ac93
+  working_tree_dirty: true
+  retained_from:
+    - feasibility/reflex_search.py
+    - feasibility/environment.py
+    - feasibility/proprio_controller.py
+    - feasibility/terrain.py
+
+observation:
+  abi: go2_raw_46d
+  joint_order: [FL_hip_joint, FL_thigh_joint, FL_calf_joint,
+                FR_hip_joint, FR_thigh_joint, FR_calf_joint,
+                RL_hip_joint, RL_thigh_joint, RL_calf_joint,
+                RR_hip_joint, RR_thigh_joint, RR_calf_joint]
+  quaternion_order: wxyz
+  estimated_velocity_frame: body
+
+simulation:
+  physics_dt: 0.002
+  control_dt: 0.02
+  episode_steps: 1000
+  settle_steps: 150
+  default_joint_position: [0.0, 0.9, -1.8]
+  kp: 60.0
+  kd: 1.0
+  torque_limit: 23.5
+  fall_tilt_radians: 0.8
+
+terrain:
+  step_height: 0.04
+  step_count: 4
+  step_depth: 0.30
+  width: 2.0
+  landing_length: 1.5
+  stair_start: 0.8
+  friction: 0.4
+
+cem:
+  generations: 8
+  population: 12
+  seed: 46
+  elite_count: 3
+  initial_std: 0.25
+  minimum_std: 0.06
+  mean_update: 0.7
+  std_update: 0.7
+  random_candidates: 2
+
+evaluation:
+  seed_start: 41000
+  episodes: 10
